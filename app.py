@@ -154,28 +154,20 @@ def do_process_contacts(is_retry=False):
         # 1. Send Admin Email
         if not admin_sent:
             print(f"Processing Admin Email to {ADMIN_EMAIL}")
-            if SMTP_USER == "your_email@gmail.com" or not SMTP_USER:
-                 print(f"SIMULATED EMAIL SENT to {ADMIN_EMAIL}. Subject: New Contact: {name}")
-                 contact['admin_email_sent'] = True
+            success_admin, err_admin = send_email(ADMIN_EMAIL, f"New Contact: {name}", admin_body)
+            if success_admin:
+                contact['admin_email_sent'] = True
             else:
-                 success_admin, err_admin = send_email(ADMIN_EMAIL, f"New Contact: {name}", admin_body)
-                 if success_admin:
-                     contact['admin_email_sent'] = True
-                 else:
-                     errors.append(f"Admin Email Failed: {err_admin}")
+                errors.append(f"Admin Email Failed: {err_admin}")
 
         # 2. Send User Email
         if not user_sent and email and email != 'unknown':
             print(f"Processing User Welcome Email to {email}")
-            if SMTP_USER == "your_email@gmail.com" or not SMTP_USER:
-                print(f"SIMULATED EMAIL SENT to {email}. Subject: Welcome to MFD-DOST - We have received your details!")
+            success_user, err_user = send_email(email, "Welcome to MFD-DOST - We have received your details!", user_body)
+            if success_user:
                 contact['user_email_sent'] = True
             else:
-                success_user, err_user = send_email(email, "Welcome to MFD-DOST - We have received your details!", user_body)
-                if success_user:
-                    contact['user_email_sent'] = True
-                else:
-                    errors.append(f"User Email Failed: {err_user}")
+                errors.append(f"User Email Failed: {err_user}")
         elif email == 'unknown' or not email:
             contact['user_email_sent'] = True
 
@@ -228,6 +220,23 @@ def contact():
     save_contact(data)
     
     return jsonify({"success": True, "message": "Your message has been received."}), 200
+
+@app.route('/api/trigger-batch', methods=['GET', 'POST'])
+def trigger_batch():
+    # Only allow trigger if a matching token is provided, protecting the deployed app
+    token = request.args.get('token')
+    
+    # Strictly require a token from the environment (.env or Heroku Config Vars)
+    expected_token = os.environ.get("ADMIN_TOKEN")
+    
+    # Block access if no token is configured in the environment or if it doesn't match
+    if not expected_token or token != expected_token:
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    # Manual bypass to immediately process pending contacts
+    do_process_contacts(is_retry=False) # Run the 6 PM daily job logic
+    do_process_contacts(is_retry=True)  # Run the 15-min retry job logic
+    return jsonify({"success": True, "message": "Batch processes triggered manually. Check terminal logs."}), 200
 
 if __name__ == '__main__':
     # When running with debug=True, the scheduler might start twice due to the reloader.
