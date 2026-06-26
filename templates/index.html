@@ -245,13 +245,20 @@
     /* ── MOBILE MENU ── */
     #mobile-menu {
       transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-      transform: translateY(-8px);
+      transform: translateY(-8px) scaleY(0.95);
       opacity: 0;
+      visibility: hidden;
       pointer-events: none;
+      position: absolute;
+      top: 100%;
+      left: 1rem;
+      right: 1rem;
+      transform-origin: top;
     }
     #mobile-menu.open {
-      transform: translateY(0);
+      transform: translateY(0) scaleY(1);
       opacity: 1;
+      visibility: visible;
       pointer-events: all;
     }
 
@@ -533,8 +540,8 @@
     </div>
 
     <!-- Mobile Menu -->
-    <div id="mobile-menu" class="md:hidden mt-3 mx-0">
-      <div class="glass rounded-2xl p-5 flex flex-col gap-4">
+    <div id="mobile-menu" class="md:hidden">
+      <div class="glass rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
         <a href="#home" class="nav-link text-base block whitespace-nowrap" onclick="navigateToSection('home'); closeMobileMenu(); return false;">Home</a>
         <a href="#why" class="nav-link text-base block whitespace-nowrap" onclick="navigateToSection('why'); closeMobileMenu(); return false;">Why It Matters</a>
         <a href="#services" class="nav-link text-base block whitespace-nowrap" onclick="navigateToSection('services'); closeMobileMenu(); return false;">Services</a>
